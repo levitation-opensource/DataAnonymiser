@@ -1,6 +1,10 @@
 # DataAnonymiser
 
-This software anonymises data inside text files and CSV-like files. It removes various sorts of personally identifiable information. Each removed part is replaced with a suitable generic text, depending on the type of removed data. Currently English and Russian languages are supported. Russian works both with Cyrillic and Latin characters.
+This software anonymises data inside text files and CSV-like files. It removes various sorts of personally identifiable information. Each removed part is replaced with a suitable generic text, depending on the type of removed data. 
+
+Currently English and Russian languages are supported. Russian works both with Cyrillic and Latin characters. 
+
+The language is automatically detected. In case of CSV-like files, the language of each cell is detected separately. Therefore multi-language CSV-like files are supported.
 
 
 ## Example input and output files
