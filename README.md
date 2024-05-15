@@ -4,18 +4,18 @@ This software anonymises data inside text files and CSV-like files. It removes v
 
 Currently English and Russian languages are supported. Russian works both with Cyrillic and Latin characters. 
 
-The language is automatically detected. In case of CSV-like files, the language of each cell is detected separately. Therefore multi-language CSV-like files are supported.
+The language is automatically detected. In case of CSV-like files, the language of each cell is detected separately. Therefore multi-language CSV-like files are supported as well.
 
 
 ## Example input and output files
 
-<a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/test_input_en.txt"><u>data/test_input_en.txt</u></a> - <a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/example_output_en.txt"><u>data/example_output_en.txt</u></a>
+Example input and output copied to an annotated PDF file: <a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/Anonymisation example 1.pdf"><u>Anonymisation example 1.pdf</u></a>
 
-<a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/test_input_en.csv"><u>data/test_input_en.csv</u></a> - <a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/example_output_en.csv"><u>data/example_output_en.csv</u></a>
-
-<a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/test_input_ru_cyr.txt"><u>data/test_input_ru_cyr.txt</u></a> - <a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/example_output_ru_cyr.txt"><u>data/example_output_ru_cyr.txt</u></a>
-
-<a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/test_input_ru_lat.txt"><u>data/test_input_ru_lat.txt</u></a> - <a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/example_output_ru_lat.txt"><u>data/example_output_ru_lat.txt</u></a>
+Example input and output file pairs for TXT and CSV file formats in English language, and TXT file format in Russian language with Cyrillic and Latin alphabet:
+* <a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/test_input_en.txt"><u>data/test_input_en.txt</u></a> - <a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/example_output_en.txt"><u>data/example_output_en.txt</u></a>
+* <a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/test_input_en.csv"><u>data/test_input_en.csv</u></a> - <a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/example_output_en.csv"><u>data/example_output_en.csv</u></a>
+* <a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/test_input_ru_cyr.txt"><u>data/test_input_ru_cyr.txt</u></a> - <a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/example_output_ru_cyr.txt"><u>data/example_output_ru_cyr.txt</u></a>
+* <a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/test_input_ru_lat.txt"><u>data/test_input_ru_lat.txt</u></a> - <a href="https://github.com/levitation-opensource/DataAnonymiser/blob/main/data/example_output_ru_lat.txt"><u>data/example_output_ru_lat.txt</u></a>
 
 
 ## How it works
