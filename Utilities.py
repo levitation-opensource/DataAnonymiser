@@ -740,8 +740,8 @@ number_with_spaces_re   = regex.compile(
 #)
 
 title_cased_words_re   = regex.compile(
-  lookbehind_space_or_left_brac_or_punc   # NB! do not anonymise upper-cased words
-  + r'\p{Lu}\w+(' + space_except_newlines + r'+(\p{Lu}\p{Ll}+|\p{Lu}[.]?))*' + space_except_newlines + r'+\p{Lu}\p{Ll}+'   # Abc D E. Fgh Ijk
+  lookbehind_space_or_left_brac_or_punc   # NB! do not anonymise upper-cased words    # NB! allow ' character in the words
+  + r'\p{Lu}[\'\p{Ll}]+(' + space_except_newlines + r'+(\p{Lu}[\'\p{Ll}]+|\p{Lu}[.]?))*' + space_except_newlines + r'+\p{Lu}[\'\p{Ll}]+'   # Abc D E. Fgh Ijk
   + lookahead_space_or_right_brac_or_punc# ,
   # regex.IGNORECASE
 )
