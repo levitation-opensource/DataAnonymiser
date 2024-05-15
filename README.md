@@ -21,7 +21,7 @@ This software uses a combination of Named Entity Recognition (NER) and regular e
 
 ## Usage
 
-`python Recogniser.py "input_file.txt"|"input_file.csv"|"input_file.tsv"`
+`python Recogniser.py "input_file.txt"|"input_file.csv"|"input_file.tsv" ["output_file.txt"|"output_file.csv"|"output_file.tsv"]`
 
 The user provided files are expected to be in the same folder as the main Python script, unless an absolute path is provided. If run without arguments then sample files in the `data` folder are used. If the user provides input file name but no output file name then the output file name will be calculated as `input filename` + `_anonymised` + `.input filename extension`.
 
