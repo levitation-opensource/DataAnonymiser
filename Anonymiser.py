@@ -198,7 +198,6 @@ def choose_ner_model(detector, user_input, default_ner_model):
     else:
       # TODO: add more language models
       ner_model = default_ner_model    # not implemented, lets hope it works out. If not, the user needs to configure things manually
-      qqq = True    # for debugging
 
   #/ if ner_model_language != iso_code:
 
@@ -327,7 +326,7 @@ async def anonymiser(argv = None):
   #/ if not is_table:
 
 
-  qqq = True    # for debugging
+  return
 
 #/ async def anonymiser():
 
