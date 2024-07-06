@@ -2,8 +2,9 @@ asyncio>=3.4.3
 aiofiles>=23.1.0
 json_tricks>=3.17.1
 lingua-language-detector>=2.0.2
+odfpy>=1.4.1
 pandas>=2.1.4
-progressbar2==4.2.0
+progressbar2>=4.2.0
 pympler>=1.0.1
 regex>=2023.3.23
 spacy>=3.5.4

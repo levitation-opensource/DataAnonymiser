@@ -237,7 +237,13 @@ async def anonymiser(argv = None):
     output_filename = file_name_stem + "_anonymised" + file_extension
 
 
-  if file_extension == ".tsv":  # TODO: support for compressed CSV files. Pandas supports it by default.
+  # xlsx and ods formats are supported for writing:
+  # https://github.com/pandas-dev/pandas/issues/48514
+  # https://pandas.pydata.org/docs/user_guide/io.html#opendocument-spreadsheets
+  sheet_extensions = [".xlsx", ".ods"]  # ".xls", ".xlsm", ".xlsb" - Excel formats, but unclear if they can later be written. ".odf" - formula, mathematical equations documents, ".odt" - text documents - https://en.wikipedia.org/wiki/OpenDocument
+
+
+  if file_extension == ".tsv":
     is_table = True
 
     encoding = config.get("encoding")
@@ -245,6 +251,14 @@ async def anonymiser(argv = None):
 
     fullfilename = os.path.join(data_dir, input_filename)
     user_input = pd.read_csv(fullfilename, delimiter="\t", dtype=str, na_filter=False, encoding=encoding, encoding_errors="ignore", on_bad_lines="warn", header=None if csv_anonymise_header else 0)  
+
+  elif file_extension in sheet_extensions:   # NB! only first sheet is processed
+    is_table = True
+
+    csv_anonymise_header = config.get("csv_anonymise_header")
+
+    fullfilename = os.path.join(data_dir, input_filename)
+    user_input = pd.read_excel(fullfilename, dtype=str, na_filter=False, header=None if csv_anonymise_header else 0)   # TODO: option to preserve non-str data types in case numbers or dates are not anonymised. Also, booleans do not need anonymisation and formatting could maybe be preserved.
 
   elif file_extension == ".csv":  # TODO: support for compressed CSV files. Pandas supports it by default.
     is_table = True
@@ -263,12 +277,18 @@ async def anonymiser(argv = None):
     fullfilename = os.path.join(data_dir, input_filename)
     user_input = pd.read_csv(fullfilename, delimiter=csv_delimiter, dtype=str, na_filter=False, quotechar=csv_quotechar, doublequote=csv_doublequote, escapechar=csv_escapechar, encoding=encoding, encoding_errors="ignore", on_bad_lines="warn", header=None if csv_anonymise_header else 0)
 
-  else:
+  elif file_extension == ".txt":
     is_table = False
 
     encoding = config.get("encoding")
 
     user_input = (await read_txt(input_filename, quiet = True, encoding=encoding))
+
+  else:
+
+    print("Error: Unknown file format: " + file_extension)
+    return
+
 
   assert user_input is not None, "Input file not found"
 
@@ -305,7 +325,7 @@ async def anonymiser(argv = None):
 
           cell_out, anonymise_state = await anonymise(config, cell_in, language_ner_model, state=anonymise_state, enable_cache=False)    # NB! cannot use cache here since the replacements need to be shared over all cells
           if cell_in != cell_out:
-            user_input.loc[pd_index, col] = cell_out
+            user_input.loc[pd_index, col] = cell_out    # TODO: verify that merged cells in Excel sheets are handled properly
 
         bar.update(row_index + 1)
 
@@ -317,6 +337,9 @@ async def anonymiser(argv = None):
 
     if file_extension == ".tsv":
       user_input.to_csv(output_filename, sep="\t", header=not csv_anonymise_header, index=False, encoding=encoding) # if csv_anonymise_header is True, then header is already part of the data. Setting header=True in this case would result in an extra header row consisting of increasing integer numbers.
+
+    elif file_extension in sheet_extensions:
+      user_input.to_excel(output_filename, header=not csv_anonymise_header, index=False) # if csv_anonymise_header is True, then header is already part of the data. Setting header=True in this case would result in an extra header row consisting of increasing integer numbers.
 
     else:
       user_input.to_csv(output_filename, sep=csv_delimiter, header=not csv_anonymise_header, index=False, encoding=encoding, quotechar=csv_quotechar, doublequote=csv_doublequote, escapechar=csv_escapechar) # if csv_anonymise_header is True, then header is already part of the data. Setting header=True in this case would result in an extra header row consisting of increasing integer numbers.
