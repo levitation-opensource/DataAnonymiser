@@ -430,10 +430,12 @@ async def save_txt(filename, str, quiet = False, make_backup = False, append = F
 #/ def save_txt(filename, data):
 
 
-def strtobool(val):
+def strtobool(val, allow_additional_values=[]):
 
   val = val.lower() if val else ""
-  if val in ('y', 'yes', 't', 'true', 'on', '1'):
+  if val in allow_additional_values:
+      return val
+  elif val in ('y', 'yes', 't', 'true', 'on', '1'):
       return True
   elif val in ('n', 'no', 'f', 'false', 'off', '0'):
       return False

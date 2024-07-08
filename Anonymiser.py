@@ -20,6 +20,7 @@ import sys
 import regex
 from collections import defaultdict
 from configparser import ConfigParser
+import csv
 import pandas as pd                 # .csv, xls, xlsx, xlsb, .odp, .ods, .odt
 
 from lingua import Language, LanguageDetectorBuilder
@@ -64,8 +65,11 @@ def get_config():
 
   encoding = remove_quotes(config.get(config_section, "Encoding", fallback="utf-8")).strip()
 
-  csv_delimiter = remove_quotes(config.get(config_section, "CsvDelimiter", fallback=",")).strip()
   csv_anonymise_header = strtobool(remove_quotes(config.get(config_section, "CsvAnonymiseHeader", fallback="false")))
+
+  csv_delimiter = remove_quotes(config.get(config_section, "CsvDelimiter", fallback=",")).strip()
+  if csv_delimiter == "default":
+    csv_delimiter = ","
 
   csv_quotechar = remove_quotes(config.get(config_section, "CsvQuoteChar", fallback='"')).strip()
   if csv_quotechar == "default" or csv_quotechar == "double":
@@ -73,7 +77,9 @@ def get_config():
   elif csv_quotechar == "single":
     csv_quotechar = "'"
 
-  csv_doublequote = strtobool(remove_quotes(config.get(config_section, "CsvDoubleQuote", fallback="true")))
+  csv_doublequote = strtobool(remove_quotes(config.get(config_section, "CsvDoubleQuote", fallback="true")), allow_additional_values=["auto", "default"])
+  if csv_doublequote == "default":
+    csv_doublequote = True
 
   csv_escapechar = remove_quotes(config.get(config_section, "CsvEscapeChar", fallback=",")).strip()
   if csv_escapechar == "default" or csv_escapechar == "none":
@@ -263,6 +269,8 @@ async def anonymiser(argv = None):
   elif file_extension == ".csv":  # TODO: support for compressed CSV files. Pandas supports it by default.
     is_table = True
 
+    fullfilename = os.path.join(data_dir, input_filename)
+
     encoding = config.get("encoding")
     csv_anonymise_header = config.get("csv_anonymise_header")
 
@@ -271,10 +279,35 @@ async def anonymiser(argv = None):
     csv_doublequote = config.get("csv_doublequote")
     csv_escapechar = config.get("csv_escapechar")
 
-    # TODO: add "quoting" parameter as well?
+
+    if (
+        csv_delimiter == "auto" 
+        or csv_quotechar == "auto"
+        or csv_doublequote == "auto"
+        or csv_escapechar == "auto"
+    ):
+      user_input = (await read_txt(input_filename, quiet = True, encoding=encoding))
+      dialect = csv.Sniffer().sniff(user_input)
+
+      if csv_delimiter == "auto":
+        csv_delimiter = dialect.delimiter
+      if csv_quotechar == "auto":
+        csv_quotechar = dialect.quotechar
+      if csv_doublequote == "auto":
+        csv_doublequote = dialect.doublequote
+      if csv_escapechar == "auto":
+        csv_escapechar = dialect.escapechar
+    
+      # TODO:
+		  # dialect.quoting	0	int
+		  # dialect.skipinitialspace	False	bool
+
+    #/ if ... == "auto":
+
+
+    # TODO: add "quoting" and "skipinitialspace" parameters as well?
     # TODO: add "dialect" parameter? (But note: .to_csv() does not have support for dialect parameter).
 
-    fullfilename = os.path.join(data_dir, input_filename)
     user_input = pd.read_csv(fullfilename, delimiter=csv_delimiter, dtype=str, na_filter=False, quotechar=csv_quotechar, doublequote=csv_doublequote, escapechar=csv_escapechar, encoding=encoding, encoding_errors="ignore", on_bad_lines="warn", header=None if csv_anonymise_header else 0)
 
   elif file_extension == ".txt":

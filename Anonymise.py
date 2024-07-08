@@ -330,6 +330,8 @@ def anonymise(user_input, anonymise_names, anonymise_numbers, anonymise_dates, a
         NER = spacy.load(ner_model)
         ner_cache[ner_model] = NER
 
+    # TODO: add spaces after words in case "(" or "- " character follows. Else NER will not process these words
+
     ner_entities = NER(user_input)
 
   else:
