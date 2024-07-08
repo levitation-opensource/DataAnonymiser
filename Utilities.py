@@ -644,6 +644,21 @@ greedy_atomic_digits2 = r'(?=(?P<greedy_atomic_digits2>\d+))(?P=greedy_atomic_di
 
 space_except_newlines = r'[^\S\r\n]'    # Python does not support \h
 
+# https://chatgpt.com/share/3d6112bd-4f51-4898-a87f-470e4d30df40
+#
+# Hyphen-Minus (-)
+# Unicode: U+002D
+# Description: The standard hyphen, used in most keyboards. It is the most commonly used dash-like character in compound names, such as in double-barreled surnames (e.g., "Smith-Jones").
+#
+#Non-Breaking Hyphen (‑)
+#Unicode: U+2011
+#Description: Similar to the standard hyphen but prevents a line break at its position. It's useful in ensuring that parts of a name are not separated across lines in text formatting.
+#
+#En Dash (–)
+#Unicode: U+2013
+#Description: Slightly longer than a hyphen. It's used in some typographical traditions for compound names, especially where each part of the compound is itself multi-part or has an open space (e.g., "Jean–Luc Picard").
+single_dash_or_spaces_except_newlines = r'([\u002D\u2011\u2013]' + '|' + space_except_newlines + '+)'
+
 # regex.DOTALL flag is not needed in these regexes
 
 topleveldomains = ['com', 'org', 'net', 'edu', 'gov', 'int', 'mil', 'me', 'io', 'ai', 'ru', 'co.uk']     # TODO: add more top-level domains here
@@ -693,10 +708,21 @@ at_gmail_re = regex.compile(
 
 # see also https://stackoverflow.com/questions/16699007/regular-expression-to-match-standard-10-digit-phone-number
 
+# https://chatgpt.com/share/3d6112bd-4f51-4898-a87f-470e4d30df40
+#
+# Hyphen-Minus (-)
+# Unicode: U+002D
+# Description: The standard hyphen, used in most keyboards. It is the most commonly used dash-like character in compound names, such as in double-barreled surnames (e.g., "Smith-Jones").
+#
+# Figure Dash (‒)
+# Unicode: U+2012
+# Description: Similar in width to a hyphen. It's used primarily in numerical contexts, like phone numbers, rather than in names.
+single_phone_number_dash = r'[\u002D\u2012]'
+
 phone_without_dots_re    = regex.compile(   
   lookbehind_space_or_left_brac_or_punc      # NB! here we exlude . and , from lookbehind
   # NB! here we do not use \s but space_except_newlines instead. Newlines should not be inside phone numbers.
-  + r'(([+]|00)?[1-9]|[(]([+]|00)?[1-9]\d*[)])(\d+|(((-|' + space_except_newlines + r')*|(-|' + space_except_newlines + r')*[(]' + space_except_newlines + r'*\d+' + space_except_newlines + r'*[)](-|' + space_except_newlines + r')*)' + greedy_atomic_digits1 + r')){2,}'  # +372 58 058 134, 00372 58 058 134, (+372) 58 058 134, +1 (800) 58 058 134
+  + r'(([+]|00)?[1-9]|[(]([+]|00)?[1-9]\d*[)])(\d+|(((' + single_phone_number_dash + r'|' + space_except_newlines + r')*|(' + single_phone_number_dash + r'|' + space_except_newlines + r')*[(]' + space_except_newlines + r'*\d+' + space_except_newlines + r'*[)](' + single_phone_number_dash + r'|' + space_except_newlines + r')*)' + greedy_atomic_digits1 + r')){2,}'  # +372 58 058 134, 00372 58 058 134, (+372) 58 058 134, +1 (800) 58 058 134
   + lookahead_space_or_right_brac_or_punc,
   regex.IGNORECASE
 )
@@ -736,14 +762,14 @@ number_with_spaces_re   = regex.compile(
 
 #title_cased_words_re   = re.compile(
 #  lookbehind_space_or_left_brac_or_punc   # NB! do not anonymise upper-cased words
-#  + pLu + r'\w+(' + space_except_newlines + r'+(' + pLu + r'\w+|' + pLu + r'[.]?))*' + space_except_newlines + r'+' + pLu + r'\w+'   # Abc D E. Fgh Ijk
+#  + pLu + r'\w+(' + single_dash_or_spaces_except_newlines + r'(' + pLu + r'\w+|' + pLu + r'[.]?))*' + single_dash_or_spaces_except_newlines + pLu + r'\w+'   # Abc D E. Fgh Ijk
 #  + lookahead_space_or_right_brac_or_punc# ,
 #  # re.IGNORECASE
 #)
 
 title_cased_words_re   = regex.compile(
   lookbehind_space_or_left_brac_or_punc   # NB! do not anonymise upper-cased words    # NB! allow ' character in the words
-  + r'\p{Lu}[\'\p{Ll}]+(' + space_except_newlines + r'+(\p{Lu}[\'\p{Ll}]+|\p{Lu}[.]?))*' + space_except_newlines + r'+\p{Lu}[\'\p{Ll}]+'   # Abc D E. Fgh Ijk
+  + r'\p{Lu}[\'\p{Ll}]+(' + single_dash_or_spaces_except_newlines + r'(\p{Lu}[\'\p{Ll}]+|\p{Lu}[.]?))*' + single_dash_or_spaces_except_newlines + r'\p{Lu}[\'\p{Ll}]+'   # Abc D E. Fgh Ijk
   + lookahead_space_or_right_brac_or_punc# ,
   # regex.IGNORECASE
 )
