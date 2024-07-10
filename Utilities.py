@@ -619,9 +619,12 @@ class RobustProgressBar(ProgressBar):
 #/ class RobustProgressBar(ProgressBar):
 
 
-left_brac_or_punc = r'[.,:;!?({<\[\/\-]'  # NB! / or - IS included here
-left_brac_or_punc_except_dot_and_comma = r'[:;!?({<\[\/\-]'  # NB! / or - IS included here
-right_brac_or_punc = r'[.,:;!?)}>\]]'     # NB! / or - IS NOT included here
+left_brac = r'({<\['
+right_brac = r')}>\]'
+
+left_brac_or_punc = r'[.,:;!?' + left_brac + '\/\-]'  # NB! / or - IS included here
+left_brac_or_punc_except_dot_and_comma = r'[:;!?' + left_brac + '\/\-]'  # NB! / or - IS included here
+right_brac_or_punc = r'[.,:;!?' + right_brac + ']'     # NB! / or - IS NOT included here
 
 # https://stackoverflow.com/questions/17327765/exclude-characters-from-a-character-class
 alpha_except_left_brac_or_punc = r'((?!' + left_brac_or_punc + ')\S)'
@@ -657,7 +660,9 @@ space_except_newlines = r'[^\S\r\n]'    # Python does not support \h
 #En Dash (–)
 #Unicode: U+2013
 #Description: Slightly longer than a hyphen. It's used in some typographical traditions for compound names, especially where each part of the compound is itself multi-part or has an open space (e.g., "Jean–Luc Picard").
-single_dash_or_spaces_except_newlines = r'([\u002D\u2011\u2013]' + '|' + space_except_newlines + '+)'
+dash_in_names_re = r'[\u002D\u2011\u2013]'
+
+single_dash_in_name_or_spaces_except_newlines = r'(' + dash_in_names_re + '|' + space_except_newlines + '+)'
 
 # regex.DOTALL flag is not needed in these regexes
 
@@ -762,15 +767,16 @@ number_with_spaces_re   = regex.compile(
 
 #title_cased_words_re   = re.compile(
 #  lookbehind_space_or_left_brac_or_punc   # NB! do not anonymise upper-cased words
-#  + pLu + r'\w+(' + single_dash_or_spaces_except_newlines + r'(' + pLu + r'\w+|' + pLu + r'[.]?))*' + single_dash_or_spaces_except_newlines + pLu + r'\w+'   # Abc D E. Fgh Ijk
-#  + lookahead_space_or_right_brac_or_punc# ,
+#  + pLu + r'\w+(' + single_dash_in_name_or_spaces_except_newlines + r'(' + pLu + r'\w+|' + pLu + r'[.]?))*' + single_dash_in_name_or_spaces_except_newlines + pLu + r'\w+'   # Abc D E. Fgh Ijk
+#  + lookahead_space_or_right_brac_or_punc  # ,
 #  # re.IGNORECASE
 #)
 
+# TODO: handle more diacritics besides '
 title_cased_words_re   = regex.compile(
   lookbehind_space_or_left_brac_or_punc   # NB! do not anonymise upper-cased words    # NB! allow ' character in the words
-  + r'\p{Lu}[\'\p{Ll}]+(' + single_dash_or_spaces_except_newlines + r'(\p{Lu}[\'\p{Ll}]+|\p{Lu}[.]?))*' + single_dash_or_spaces_except_newlines + r'\p{Lu}[\'\p{Ll}]+'   # Abc D E. Fgh Ijk
-  + lookahead_space_or_right_brac_or_punc# ,
+  + r'\p{Lu}[\'\p{Ll}]+(' + single_dash_in_name_or_spaces_except_newlines + r'(\p{Lu}[\'\p{Ll}]+|\p{Lu}[.]?))*' + single_dash_in_name_or_spaces_except_newlines + r'\p{Lu}[\'\p{Ll}]+'   # Abc D E. Fgh Ijk
+  + lookahead_space_or_right_brac_or_punc   # ,
   # regex.IGNORECASE
 )
 

@@ -16,7 +16,7 @@ import string
 from collections import namedtuple
 
 
-from Utilities import Timer, email_re, at_gmail_re, http_re, url_like_re, www_re, domain_re, phone_without_dots_re, phone_with_dots_re, number_without_spaces_with_dot_or_comma_re, number_without_spaces_without_dot_or_comma_re, number_with_spaces_re, title_cased_words_re
+from Utilities import Timer, email_re, at_gmail_re, http_re, url_like_re, www_re, domain_re, phone_without_dots_re, phone_with_dots_re, number_without_spaces_with_dot_or_comma_re, number_without_spaces_without_dot_or_comma_re, number_with_spaces_re, title_cased_words_re, left_brac
 
 
 ner_cache = {}
@@ -330,7 +330,43 @@ def anonymise(user_input, anonymise_names, anonymise_numbers, anonymise_dates, a
         NER = spacy.load(ner_model)
         ner_cache[ner_model] = NER
 
-    # TODO: add spaces after words in case "(" or "- " character follows. Else NER will not process these words
+
+    # https://chatgpt.com/share/3d6112bd-4f51-4898-a87f-470e4d30df40
+    #
+    # Hyphen-Minus (-)
+    # Unicode: U+002D
+    # Description: The standard hyphen, used in most keyboards. It is the most commonly used dash-like character in compound names, such as in double-barreled surnames (e.g., "Smith-Jones").
+    #
+    #Non-Breaking Hyphen (‑)
+    #Unicode: U+2011
+    #Description: Similar to the standard hyphen but prevents a line break at its position. It's useful in ensuring that parts of a name are not separated across lines in text formatting.
+    #
+    #En Dash (–)
+    #Unicode: U+2013
+    #Description: Slightly longer than a hyphen. It's used in some typographical traditions for compound names, especially where each part of the compound is itself multi-part or has an open space (e.g., "Jean–Luc Picard").
+    #
+    #Em Dash (—)
+    #Unicode: U+2014
+    #Description: Much longer than an en dash or hyphen. It's generally used for breaks in thought or longer pauses in sentences, not typically in names, but there are exceptions in certain artistic or stylized uses.
+
+    #Figure Dash (‒)
+    #Unicode: U+2012
+    #Description: Similar in width to a hyphen. It's used primarily in numerical contexts, like phone numbers, rather than in names.
+
+    #Horizontal Bar (―)
+    #Unicode: U+2015
+    #Description: A dash character that is sometimes used like an em dash. It is also used in bibliographies and certain types of formal names but is relatively rare.
+
+    # lets accept all sorts of dashes after words since the next word might be not a name anymore
+    dash_between_words_re = r'[\u002D\u2011\u2013\u2014\u2012\u2015]'
+
+    # add spaces after words in case "(" or "- " character follows a lower case letter. Exclude "word(s)" sequence in case of brackets. Else NER will not process these words. TODO: if lower case letter follows upper cased word, then should we handle that as well?
+    # TODO: preserve "someword(s)" sequence only in English text
+    # TODO: restore original character locations later
+
+    bracket_or_dash_re = r'(\p{Ll})((?!\(s\))[' + left_brac + ']|' + dash_between_words_re + r'\s|[\/\\]\s?)'   # include / and \ chars here as well but do not require space after it
+    user_input = regex.sub(bracket_or_dash_re, r'\1 \2', user_input)
+
 
     ner_entities = NER(user_input)
 
