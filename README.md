@@ -1,6 +1,6 @@
 # Data Anonymiser
 
-This software anonymises data inside text files and in sheet files. It removes various sorts of personally identifiable information. Each removed part is replaced with a suitable generic text, depending on the type of removed data. 
+This software anonymises data inside text files and in sheet files. It recognises and removes various sorts of personally identifiable information. Each removed part is replaced with a suitable generic text, depending on the type of removed data. 
 
 Currently English and Russian languages are supported. Russian works both with Cyrillic and Latin characters. 
 
