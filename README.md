@@ -1,4 +1,4 @@
-# DataAnonymiser
+# Data Anonymiser
 
 This software anonymises data inside text files and in sheet files. It removes various sorts of personally identifiable information. Each removed part is replaced with a suitable generic text, depending on the type of removed data. 
 
