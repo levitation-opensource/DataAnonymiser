@@ -156,10 +156,12 @@ async def anonymise(config, user_input, ner_model, state = None, enable_cache = 
 #/ async def anonymise():
 
 
-spacy_loaded = False
+# TODO: use shared flag and module reference with Anonymise module
+spacy_loaded = False    
+spacy = None
 
 def choose_ner_model(detector, user_input, default_ner_model):
-  global spacy_loaded
+  global spacy_loaded, spacy
 
   language = detector.detect_language_of(user_input)
   if language is None:

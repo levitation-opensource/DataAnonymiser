@@ -21,6 +21,7 @@ from Utilities import Timer, email_re, at_gmail_re, http_re, url_like_re, www_re
 
 ner_cache = {}
 spacy_loaded = False
+spacy = None
 
 
 def get_segments_from_ner(phase, user_input, entities_dict, ner_entities, anonymise_names, anonymise_numbers, anonymise_dates, anonymise_titles_of_work, ner_model):
@@ -315,7 +316,7 @@ class DummyNer:   # for debugging
 
 
 def anonymise(user_input, anonymise_names, anonymise_numbers, anonymise_dates, anonymise_titles_of_work, anonymise_title_cased_word_sequences, anonymise_urls, anonymise_emails, anonymise_phone_numbers, ner_model, use_only_numeric_replacements = False, state = None):
-  global spacy_loaded
+  global spacy_loaded, spacy
 
   if True:    # for debugging regex-based entities
     if not spacy_loaded:
