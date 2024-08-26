@@ -159,9 +159,11 @@ async def anonymise(config, user_input, ner_model, state = None, enable_cache = 
 # TODO: use shared flag and module reference with Anonymise module
 spacy_loaded = False    
 spacy = None
+spacy_util = None
+get_compatibility = None
 
 def choose_ner_model(detector, user_input, default_ner_model):
-  global spacy_loaded, spacy
+  global spacy_loaded, spacy, spacy_util, get_compatibility
 
   language = detector.detect_language_of(user_input)
   if language is None:
@@ -184,12 +186,13 @@ def choose_ner_model(detector, user_input, default_ner_model):
 
     if not spacy_loaded:
       with Timer("Loading Spacy"):
-        import spacy.util
+        import spacy
+        import spacy.util as spacy_util
         import spacy.cli    # spacy.cli.download(spacy_model_name)  # NB! here spacy.cli.download is a function
         from spacy.cli.download import get_compatibility    # NB! here spacy.cli.download is a module
         spacy_loaded = True
 
-    available_models = spacy.util.get_installed_models()
+    available_models = spacy_util.get_installed_models()
     compatibility = get_compatibility()
 
 
