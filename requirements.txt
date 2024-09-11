@@ -1,5 +1,6 @@
 asyncio>=3.4.3
 aiofiles>=23.1.0
+charset-normalizer>=3.1.0
 json_tricks>=3.17.1
 lingua-language-detector>=2.0.2
 odfpy>=1.4.1

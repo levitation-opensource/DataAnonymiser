@@ -367,6 +367,29 @@ async def save_file(filename, data, quiet = False, make_backup = False):
 #/ def save_file(filename, data):
 
 
+async def read_raw(filename, default_data = None, quiet = False):
+  """Reads a raw file"""
+
+  fullfilename = os.path.join(data_dir, filename)
+
+  if not os.path.exists(fullfilename):
+    return default_data
+
+  with Timer("raw file reading : " + filename, quiet):
+
+    try:
+      async with aiofiles.open(fullfilename, 'rb', 1024 * 1024) as afh:
+        data = await afh.read() 
+    except FileNotFoundError:
+      data = default_data
+
+  #/ with Timer("file reading : " + filename):
+
+  return data
+
+#/ def read_raw(filename):
+
+
 async def read_txt(filename, default_data = None, quiet = False, encoding="utf-8"):
   """Reads from a text file"""
 

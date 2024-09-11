@@ -21,10 +21,10 @@ from Utilities import Timer, email_re, at_gmail_re, http_re, url_like_re, www_re
 
 ner_cache = {}
 spacy_loaded = False
-spacy = None
+# spacy = None
 
 
-def get_segments_from_ner(phase, user_input, entities_dict, ner_entities, anonymise_names, anonymise_numbers, anonymise_dates, anonymise_titles_of_work, ner_model):
+def get_segments_from_ner(phase, user_input, reserved_entities_dict, ner_entities, anonymise_names, anonymise_numbers, anonymise_dates, anonymise_titles_of_work, ner_model):
 
   prev_ent_end = 0
   for segment in ner_entities.ents:
@@ -36,8 +36,8 @@ def get_segments_from_ner(phase, user_input, entities_dict, ner_entities, anonym
 
     text_normalised = regex.sub(r"\s+", " ", text_original) # normalise the dictionary keys so that same entity with different space formats gets same replacement
 
-    if phase == 0 and text_normalised in entities_dict: # Spacy detects texts like "Location C" as entities
-      replacement = None    # TODO: yield here so that the "Location C" does not become later part of some longer title cased sequence that will be replaced by regex?
+    if phase == 0 and text_normalised in reserved_entities_dict: # Spacy detects texts like "Location C" as entities
+      replacement = None    # TODO: yield here so that the "Location C" does not become later part of some longer title cased sequence that will be replaced by regex? Happens for example with the words "Threshold Glasgow Day Opportunities"
 
     elif label == "PERSON":
       replacement = "Person" if anonymise_names else None
@@ -140,9 +140,9 @@ def get_segments_from_ner(phase, user_input, entities_dict, ner_entities, anonym
 #/ def get_segments_from_ner():
 
 
-def get_segments_including_custom_replacements(phase, user_input, entities_dict, ner_entities, anonymise_names, anonymise_numbers, anonymise_dates, anonymise_titles_of_work, anonymise_title_cased_word_sequences, anonymise_urls, anonymise_emails, anonymise_phone_numbers, ner_model):
+def get_segments_including_custom_replacements(phase, user_input, reserved_entities_dict, ner_entities, anonymise_names, anonymise_numbers, anonymise_dates, anonymise_titles_of_work, anonymise_title_cased_word_sequences, anonymise_urls, anonymise_emails, anonymise_phone_numbers, ner_model):
 
-  for segment in get_segments_from_ner(phase, user_input, entities_dict, ner_entities, anonymise_names, anonymise_numbers, anonymise_dates, anonymise_titles_of_work, ner_model):
+  for segment in get_segments_from_ner(phase, user_input, reserved_entities_dict, ner_entities, anonymise_names, anonymise_numbers, anonymise_dates, anonymise_titles_of_work, ner_model):
 
     text_original = segment["text"]
     label = segment["label"]
@@ -235,7 +235,7 @@ def get_segments_including_custom_replacements(phase, user_input, entities_dict,
 
           # re_text_normalised = regex.sub(r"\s+", " ", re_text_original) # normalise the dictionary keys so that same entity with different space formats gets same replacement
 
-          #if phase == 0 and re_text_normalised in entities_dict: # Regex may detect texts like "Location C" as entities when title cased words detection is turned on
+          #if phase == 0 and re_text_normalised in reserved_entities_dict: # Regex may detect texts like "Location C" as entities when title cased words detection is turned on
           #  continue
 
 
@@ -255,7 +255,7 @@ def get_segments_including_custom_replacements(phase, user_input, entities_dict,
                 re_end_char = re_match.start(1) - 1 + re_match2.end(0) - 1 + ner_segment_start_char   # NB! -1 since the text was prepended with a space
 
                 re_text_normalised2 = regex.sub(r"\s+", " ", re_text_original2) # normalise the dictionary keys so that same entity with different space formats gets same replacement
-                if phase == 0 and re_text_normalised2 in entities_dict: # Regex may detect texts like "Location C" as entities when title cased words detection is turned on
+                if phase == 0 and re_text_normalised2 in reserved_entities_dict: # Regex may detect texts like "Location C" as entities when title cased words detection is turned on
                   type = None
 
                 if type == "Number or Phone" and anonymise_numbers and len(re_text_original2) <= 5:   # if number detection is turned on then treat short numbers rather as numbers, not as phone   # TODO: config parameter for the threshold value
@@ -316,14 +316,14 @@ class DummyNer:   # for debugging
 
 
 def anonymise(user_input, anonymise_names, anonymise_numbers, anonymise_dates, anonymise_titles_of_work, anonymise_title_cased_word_sequences, anonymise_urls, anonymise_emails, anonymise_phone_numbers, ner_model, use_only_numeric_replacements = False, state = None):
-  global spacy_loaded, spacy
+  global spacy_loaded #, spacy
 
   if True:    # for debugging regex-based entities
-    if not spacy_loaded:
-      with Timer("Loading Spacy"):
-        import spacy    # load it only when anonymisation is requested, since this package loads slowly
-        spacy.prefer_gpu()
-        spacy_loaded = True
+    # if not spacy_loaded:
+    with Timer("Loading Spacy", quiet=spacy_loaded):
+      import spacy    # load it only when anonymisation is requested, since this package loads slowly
+      spacy.prefer_gpu()
+      spacy_loaded = True
 
     NER = ner_cache.get(ner_model)
     if NER is None:
@@ -369,7 +369,8 @@ def anonymise(user_input, anonymise_names, anonymise_numbers, anonymise_dates, a
     user_input = regex.sub(bracket_or_dash_re, r'\1 \2', user_input)
 
 
-    ner_entities = NER(user_input)
+    with Timer("Running NER", quiet=True):
+      ner_entities = NER(user_input)
 
   else:
     ner_entities = DummyNer(user_input)
@@ -437,11 +438,14 @@ def anonymise(user_input, anonymise_names, anonymise_numbers, anonymise_dates, a
     active_replacements += "Name or Title"
 
 
+  reserved_entities_dict = {}
+
   if len(active_replacements) > 0:
 
     # detect any pre-existing anonymous entities like Person A, Person B in the input text and reserve these letters in the dict so that they are not reused
 
-    re_matches = regex.findall(r"(^|\s)(" + active_replacements + ")(\s+)([" + regex.escape(letters) + "]|[0-9]+)(\s|:|$)", user_input) # NB! capture also numbers starting with 0 so that for example number 09 still ends up reserving number 9.
+    with Timer("Running regexes", quiet=True):
+      re_matches = regex.findall(r"(^|\s)(" + active_replacements + ")(\s+)([" + regex.escape(letters) + "]|[0-9]+)(\s|:|$)", user_input) # NB! capture also numbers starting with 0 so that for example number 09 still ends up reserving number 9.
 
     for re_match in re_matches:
 
@@ -449,11 +453,11 @@ def anonymise(user_input, anonymise_names, anonymise_numbers, anonymise_dates, a
       space = re_match[2]
       letter = re_match[3]
 
-      if letter.isalpha():
+      if letter.isalpha():    # alphabetical replacement indexes
         replacement_letter_index = ord(letter) - ord("A") 
         reserved_replacement_letter_indexes.add(replacement_letter_index)
 
-      else:
+      else:   # numeric replacement indexes
         intval = int(letter)
         if intval == 0:    # this algorithm does not produce replacement number 0, so we do not need to reserve it, also reserving it would result it reserving last letter from alphabet instead
           continue
@@ -461,16 +465,24 @@ def anonymise(user_input, anonymise_names, anonymise_numbers, anonymise_dates, a
         replacement_letter_index = len(letters) + intval - 1   # NB! -1 since replacement numbers start from 1 in the line "replacement_letter = str(replacement_letter_index + 1)"
         reserved_replacement_letter_indexes.add(replacement_letter_index)
 
-      entities_dict[replacement + " " + letter] = replacement_letter_index  # use space as separator to normalise the dictionary keys so that same entity with different space formats gets same replacement
-      # entities_dict[replacement + space + letter] = replacement_letter_index
+      reserved_entities_dict[replacement + " " + letter] = replacement_letter_index
 
+      # NB! save to entities_dict as well so that this phrase is reserved for all sheet cells
+      # TODO!!! need to process all sheet cells for reserved phrases before starting NER
+      # entities_dict[replacement + " " + letter] = replacement_letter_index  # use space as separator to normalise the dictionary keys so that same entity with different space formats gets same replacement
+      
     #/ for re_match in re_matches:
 
   #/ if len(active_replacements) > 0:
 
 
+
+  if user_input == 'Threshold Glasgow Day Opportunities':
+    qqq = True
+
+
   for phase in range(0, 2): # Two phases: 1) counting unique entities, 2) replacing them. Phase 1 is needed so that same entity will have same replacement in all places.
-    for segment in get_segments_including_custom_replacements(phase, user_input, entities_dict, ner_entities, anonymise_names, anonymise_numbers, anonymise_dates, anonymise_titles_of_work, anonymise_title_cased_word_sequences, anonymise_urls, anonymise_emails, anonymise_phone_numbers, ner_model):
+    for segment in get_segments_including_custom_replacements(phase, user_input, reserved_entities_dict, ner_entities, anonymise_names, anonymise_numbers, anonymise_dates, anonymise_titles_of_work, anonymise_title_cased_word_sequences, anonymise_urls, anonymise_emails, anonymise_phone_numbers, ner_model):
 
       text_original = segment["text"]
       replacement = segment["replacement"]

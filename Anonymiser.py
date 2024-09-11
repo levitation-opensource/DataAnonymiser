@@ -22,11 +22,12 @@ from collections import defaultdict
 from configparser import ConfigParser
 import csv
 import pandas as pd                 # .csv, xls, xlsx, xlsb, .odp, .ods, .odt
+import charset_normalizer
 
 from lingua import Language, LanguageDetectorBuilder
 
 
-from Utilities import data_dir, init_logging, safeprint, print_exception, loop, debugging, is_dev_machine, data_dir, Timer, read_file, save_file, read_txt, save_txt, strtobool, remove_quotes, async_cached, RobustProgressBar, space_except_newlines
+from Utilities import data_dir, init_logging, safeprint, print_exception, loop, debugging, is_dev_machine, data_dir, Timer, read_file, save_file, read_raw, read_txt, save_txt, strtobool, remove_quotes, async_cached, RobustProgressBar, space_except_newlines
 import Anonymise
 
 
@@ -156,20 +157,17 @@ async def anonymise(config, user_input, ner_model, state = None, enable_cache = 
 #/ async def anonymise():
 
 
-# TODO: use shared flag and module reference with Anonymise module
+# TODO: use shared flag with Anonymise module
 spacy_loaded = False    
-spacy = None
-spacy_util = None
-get_compatibility = None
 
 def choose_ner_model(detector, user_input, default_ner_model):
-  global spacy_loaded, spacy, spacy_util, get_compatibility
+  global spacy_loaded   # , spacy, spacy_util, get_compatibility
 
   language = detector.detect_language_of(user_input)
   if language is None:
     if user_input.strip() != "" and len(user_input.strip()) > 1 and not user_input.strip().isnumeric():
       qqq = True    # for debugging   # can be a date
-    return default_ner_model
+    return default_ner_model    # TODO!!! use language detected by charset_normalizer or last detected language during previous function call?
 
   iso_code = language.iso_code_639_1.name.lower()
 
@@ -184,13 +182,13 @@ def choose_ner_model(detector, user_input, default_ner_model):
 
   else:   # adapt the spacy model name depending on the language, also check whether spacy's alternate NER language model has same sized model available that was specified in the default NER model
 
-    if not spacy_loaded:
-      with Timer("Loading Spacy"):
-        import spacy
-        import spacy.util as spacy_util
-        import spacy.cli    # spacy.cli.download(spacy_model_name)  # NB! here spacy.cli.download is a function
-        from spacy.cli.download import get_compatibility    # NB! here spacy.cli.download is a module
-        spacy_loaded = True
+    # if not spacy_loaded:
+    with Timer("Loading Spacy", quiet=spacy_loaded):
+      import spacy
+      import spacy.util as spacy_util
+      import spacy.cli    # spacy.cli.download(spacy_model_name)  # NB! here spacy.cli.download is a function
+      from spacy.cli.download import get_compatibility    # NB! here spacy.cli.download is a module
+      spacy_loaded = True
 
     available_models = spacy_util.get_installed_models()
     compatibility = get_compatibility()
@@ -216,6 +214,25 @@ def choose_ner_model(detector, user_input, default_ner_model):
   return ner_model
 
 #/ choose_ner_model(detector, user_input, ner_model)
+
+
+async def detect_encoding(input_filename): 
+
+  fullfilename = os.path.join(data_dir, input_filename)
+  if not os.path.exists(fullfilename):
+    raise Exception("File not found: " + input_filename)
+
+  data = await read_raw(input_filename)
+
+  detection = charset_normalizer.detect(data)
+  if detection["confidence"] == 0:    # TODO: some other threshold for ascii fallback?
+    return "ascii"
+  else:
+    encoding = detection["encoding"]
+    confidence = detection["confidence"]    # TODO: warn if confidence is low?
+  return encoding
+
+#/ def detect_encoding(filename): 
 
 
 async def anonymiser(argv = None):
@@ -257,10 +274,14 @@ async def anonymiser(argv = None):
   if file_extension == ".tsv":
     is_table = True
 
+    fullfilename = os.path.join(data_dir, input_filename)
+
     encoding = config.get("encoding")
     csv_anonymise_header = config.get("csv_anonymise_header")
 
-    fullfilename = os.path.join(data_dir, input_filename)
+    if encoding == "auto":
+      encoding = await detect_encoding(input_filename)
+
     user_input = pd.read_csv(fullfilename, delimiter="\t", dtype=str, na_filter=False, encoding=encoding, encoding_errors="ignore", on_bad_lines="warn", header=None if csv_anonymise_header else 0)  
 
   elif file_extension in sheet_extensions:   # NB! only first sheet is processed
@@ -278,6 +299,9 @@ async def anonymiser(argv = None):
 
     encoding = config.get("encoding")
     csv_anonymise_header = config.get("csv_anonymise_header")
+
+    if encoding == "auto":
+      encoding = await detect_encoding(input_filename)
 
     csv_delimiter = config.get("csv_delimiter")
     csv_quotechar = config.get("csv_quotechar")
@@ -318,7 +342,12 @@ async def anonymiser(argv = None):
   elif file_extension == ".txt":
     is_table = False
 
+    fullfilename = os.path.join(data_dir, input_filename)
+
     encoding = config.get("encoding")
+
+    if encoding == "auto":
+      encoding = await detect_encoding(input_filename)
 
     user_input = (await read_txt(input_filename, quiet = True, encoding=encoding))
 
@@ -353,7 +382,8 @@ async def anonymiser(argv = None):
 
     # TODO: cache the result of processing whole CSV file
     columns = user_input.columns.tolist()
-    with RobustProgressBar(max_value=len(user_input)) as bar:
+    cell_index = 0
+    with RobustProgressBar(max_value=len(user_input) * len(columns)) as bar:
       for row_index, (pd_index, row) in enumerate(user_input.iterrows()):
         for col in columns:
 
@@ -365,9 +395,10 @@ async def anonymiser(argv = None):
           if cell_in != cell_out:
             user_input.loc[pd_index, col] = cell_out    # TODO: verify that merged cells in Excel sheets are handled properly
 
-        bar.update(row_index + 1)
+          cell_index += 1
+          bar.update(cell_index)
 
-    # TODO: make applymap work with async anonymise function, or use a monolithic cache and load cache outside of loop
+    # TODO: make applymap work with async anonymise function, or use a monolithic cache and load cache outside of loop. But there will be a problem in handling obfuscations in such a manner that same text is always obfuscated with same replacement. But this is okay if we only want to detect PII, or detect and obfuscate it without indexes.
     # user_input = await user_input.applymap(async lambda x: await anonymise(config, x, language_ner_model, state=anonymise_state, enable_cache=False))
 
 
