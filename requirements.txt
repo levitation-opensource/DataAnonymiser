@@ -3,12 +3,18 @@ aiofiles>=23.1.0
 charset-normalizer>=3.1.0
 json_tricks>=3.17.1
 lingua-language-detector>=2.0.2
+numpy<2.0.0
 odfpy>=1.4.1
 pandas>=2.1.4
-progressbar2>=4.2.0
+progressbar2==4.2.0
 pympler>=1.0.1
 regex>=2023.3.23
-spacy>=3.5.4
-en-core-web-lg>=3.5.0
-en-core-web-trf>=3.5.0
-ru-core-news-lg>=3.5.0
+spacy[cuda12x]>=3.5.4
+# these language models cannot be downloaded via pip install and need to be downloaded manually using the commands provided in install_steps.txt
+# en-core-web-sm>=3.8.0
+# en-core-web-md>=3.8.0
+# en-core-web-lg>=3.8.0
+# en-core-web-trf>=3.8.0
+# ru-core-news-sm>=3.8.0
+# ru-core-news-md>=3.8.0
+# ru-core-news-lg>=3.8.0

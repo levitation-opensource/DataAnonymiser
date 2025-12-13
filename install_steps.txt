@@ -1,7 +1,9 @@
 
 
-pip -r requirements.txt
+pip install -r requirements.txt
 
+
+# these language models cannot be downloaded via pip install and need to be downloaded manually using the following commands
 
 python -m spacy download en_core_web_sm
 python -m spacy download en_core_web_md
