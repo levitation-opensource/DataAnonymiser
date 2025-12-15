@@ -1,3 +1,4 @@
+aiodebug>=2.3.0
 asyncio>=3.4.3
 aiofiles>=23.1.0
 charset-normalizer>=3.1.0
@@ -9,7 +10,9 @@ pandas>=2.1.4
 progressbar2==4.2.0
 pympler>=1.0.1
 regex>=2023.3.23
-spacy[cuda12x]>=3.5.4
+# you could also try spacy[cuda12x]>=3.5.4
+# leaving CUDA out by default to avoid compilation errors in some operating systems
+spacy>=3.5.4
 # these language models cannot be downloaded via pip install and need to be downloaded manually using the commands provided in install_steps.txt
 # en-core-web-sm>=3.8.0
 # en-core-web-md>=3.8.0
