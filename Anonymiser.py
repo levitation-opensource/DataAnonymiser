@@ -282,7 +282,7 @@ async def anonymiser(argv = None):
     if encoding == "auto":
       encoding = await detect_encoding(input_filename)
 
-    user_input = pd.read_csv(fullfilename, delimiter="\t", dtype=str, na_filter=False, encoding=encoding, encoding_errors="ignore", on_bad_lines="warn", header=None if csv_anonymise_header else 0)  
+    user_input = pd.read_csv(fullfilename, delimiter="\t", dtype=str, na_filter=False, encoding=encoding, encoding_errors="ignore", on_bad_lines="warn", header=None if csv_anonymise_header else 0, index_col=False)  
 
   elif file_extension in sheet_extensions:   # NB! only first sheet is processed
     is_table = True
@@ -337,7 +337,7 @@ async def anonymiser(argv = None):
     # TODO: add "quoting" and "skipinitialspace" parameters as well?
     # TODO: add "dialect" parameter? (But note: .to_csv() does not have support for dialect parameter).
 
-    user_input = pd.read_csv(fullfilename, delimiter=csv_delimiter, dtype=str, na_filter=False, quotechar=csv_quotechar, doublequote=csv_doublequote, escapechar=csv_escapechar, encoding=encoding, encoding_errors="ignore", on_bad_lines="warn", header=None if csv_anonymise_header else 0)
+    user_input = pd.read_csv(fullfilename, delimiter=csv_delimiter, dtype=str, na_filter=False, quotechar=csv_quotechar, doublequote=csv_doublequote, escapechar=csv_escapechar, encoding=encoding, encoding_errors="ignore", on_bad_lines="warn", header=None if csv_anonymise_header else 0, index_col=False)
 
   elif file_extension == ".txt":
     is_table = False

@@ -91,7 +91,7 @@ def get_segments_from_ner(phase, user_input, reserved_entities_dict, ner_entitie
       replacement = (
                         "Number"
                         if anonymise_numbers 
-                        # and len(text_normalised) > 2  #    # do not anonymise short number since they are likely ordinals too
+                        # and len(text_normalised) > 2  #    # do not anonymise short numbers since they are likely ordinals too
                         and regex.search(r"(\d|\s)", text_normalised) is not None   # if it is a one-word textual representation of a number then do not normalise it. It might be phrase like "one-sided" etc, which is actually not a number
                         else None
                     )
@@ -318,6 +318,9 @@ class DummyNer:   # for debugging
 def anonymise(user_input, anonymise_names, anonymise_numbers, anonymise_dates, anonymise_titles_of_work, anonymise_title_cased_word_sequences, anonymise_urls, anonymise_emails, anonymise_phone_numbers, ner_model, use_only_numeric_replacements = False, state = None):
   global spacy_loaded #, spacy
 
+  # TODO!!! speed up the process by detecting cells with same content as before and applying same result
+  # TODO!!! speed up the process by skipping empty cells
+
   if True:    # for debugging regex-based entities
     # if not spacy_loaded:
     with Timer("Loading Spacy", quiet=spacy_loaded):
@@ -365,12 +368,16 @@ def anonymise(user_input, anonymise_names, anonymise_numbers, anonymise_dates, a
     # TODO: preserve "someword(s)" sequence only in English text
     # TODO: restore original character locations later
 
-    bracket_or_dash_re = r'(\p{Ll})((?!\(s\))[' + left_brac + ']|' + dash_between_words_re + r'\s|[\/\\]\s?)'   # include / and \ chars here as well but do not require space after it
+    bracket_or_dash_re = r'(\p{Ll})((?!\(s\))[' + left_brac + r']|' + dash_between_words_re + r'\s|[\/\\]\s?)'   # include / and \ chars here as well but do not require space after it
     user_input = regex.sub(bracket_or_dash_re, r'\1 \2', user_input)
 
 
     with Timer("Running NER", quiet=True):
-      ner_entities = NER(user_input)
+      try:
+        ner_entities = NER(user_input)
+      except ValueError as ex:  # for some content, NER fails with message like "ValueError: Shape mismatch for blis.gemm: (1, 0), (768, 49)"
+        result = "NER error"    # TODO: make the error message configurable
+        return result, state
 
   else:
     ner_entities = DummyNer(user_input)
@@ -445,7 +452,7 @@ def anonymise(user_input, anonymise_names, anonymise_numbers, anonymise_dates, a
     # detect any pre-existing anonymous entities like Person A, Person B in the input text and reserve these letters in the dict so that they are not reused
 
     with Timer("Running regexes", quiet=True):
-      re_matches = regex.findall(r"(^|\s)(" + active_replacements + ")(\s+)([" + regex.escape(letters) + "]|[0-9]+)(\s|:|$)", user_input) # NB! capture also numbers starting with 0 so that for example number 09 still ends up reserving number 9.
+      re_matches = regex.findall(r"(^|\s)(" + active_replacements + r")(\s+)([" + regex.escape(letters) + r"]|[0-9]+)(\s|:|$)", user_input) # NB! capture also numbers starting with 0 so that for example number 09 still ends up reserving number 9.
 
     for re_match in re_matches:
 
@@ -475,10 +482,6 @@ def anonymise(user_input, anonymise_names, anonymise_numbers, anonymise_dates, a
 
   #/ if len(active_replacements) > 0:
 
-
-
-  if user_input == 'Threshold Glasgow Day Opportunities':
-    qqq = True
 
 
   for phase in range(0, 2): # Two phases: 1) counting unique entities, 2) replacing them. Phase 1 is needed so that same entity will have same replacement in all places.
